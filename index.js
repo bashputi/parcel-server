@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const app = express();
 const port = process.env.PORT || 5002;
@@ -30,12 +30,13 @@ app.use(cors({
 async function run() {
   try {
     const userCollection = client.db('parcelDB').collection('users');
-    const bookCollection = client.db('parcelDB').collection('book');
-    const cartCollection = client.db('parcelDB').collection('carts');
+    const bookCollection = client.db('parcelDB').collection('books');
+    const paymentCollection = client.db('parcelDB').collection('payments');
+    
 // post jwt in sever 
     app.post('/jwt', async(req, res) => {
       const user = req.body;
-      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '365d' });
         res.send({ token });
     })
     // middleware 
@@ -54,14 +55,37 @@ async function run() {
       })
     }
      // use verify admin after verifyToken
-
+     const verifyAdmin = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      const isAdmin = user?.role === 'admin';
+      if (!isAdmin) {
+        return res.status(403).send({ message: 'forbidden access' });
+      }
+      next();
+    }
     // users related api
-    app.get('/users', async (req, res) => {
+    app.get('/users',verifyToken, async (req, res) => {
       const result = await userCollection.find().toArray();
       res.send(result);
     });
     // users admin email 
+    app.get('/users/admin/:email', verifyToken, async (req, res) => {
+      const email = req.params.email;
 
+      if (email !== req.decoded.email) {
+        return res.status(403).send({ message: 'forbidden access' })
+      }
+
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      let admin = false;
+      if (user) {
+        admin = user?.role === 'admin';
+      }
+      res.send({ admin });
+    })
      // users section 
      app.post('/users', async (req, res) => {
       const user = req.body;
@@ -86,31 +110,92 @@ async function run() {
    
 
     // book section 
-    app.post('/book', async(req, res) => {
-      const item = req.body;
-      const result = await bookCollection.insertOne(item);
-      res.send(result);
-    })
-    app.get('/book', async(req, res) => {
+    app.get('/books', async (req, res) => {
       const result = await bookCollection.find().toArray();
       res.send(result);
+    });
+    app.get('/books', async(req, res) => {
+      const email = req.query.email;
+      const query = { email: email };
+      console.log(query)
+      const result = await bookCollection.find(query).toArray();
+      res.send(result);
     })
-    app.delete('/book/:id', async(req, res) => {
+    app.post('/books', async(req, res) => {
+      const bookitem = req.body;
+      const result = await bookCollection.insertOne(bookitem);
+      res.send(result);
+    })
+    
+    app.delete('/books/:id', async(req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) }
-      const result = await menuCollection.deleteOne(query);
+      const result = await bookCollection.deleteOne(query);
       res.send(result)
     })
-    app.get('/book/:id', async(req, res) => {
+    app.get('/books/:id', async(req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id)};
       const result = await bookCollection.findOne(query);
       res.send(result);
+    }) 
+    app.patch('/books/:id', async (req, res) => {
+      const item = req.body;
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id)};
+      const updatedDoc = {
+        $set: {
+          address: item.address,
+          date: item.date,
+          email: item.email,
+          latitude: item.latitude,
+          longitude: item.longitude,
+          name: item.name,
+          phnno: item.phnno,
+          price: item.price,
+          receivername: item.receivername,
+          receiverphnno: item.receivername,
+          type: item.type,
+          weight: item.weigth,
+          status: 'pending'
+        }
+      }
+      const result = await bookCollection.updateOne(filter, updatedDoc);
+      res.send(result);
     })
+   
 
-
-      // cart section 
-      
+    // payment instant
+    app.post('/create-payment-intent', async(req, res) => {
+      const { price } = req.body;
+      const amount = parseInt(price * 100);
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: 'usd',
+        payment_method_types: ['card']
+      });
+      res.send({
+        clientSecret: paymentIntent.client_secret
+      })
+    })
+    app.post('/payments', async(req, res) => {
+      const payment = req.body;
+      const paymentResult = await paymentCollection.insertOne(payment);
+      console.log(paymentResult);
+      const query = {_id: {
+        $in: payment.cartIds.map(id => new ObjectId(id))
+      }};
+     
+      res.send({paymentResult, query})
+    })
+    app.get('/payments/:email', verifyToken, async(req, res) => {
+      const query = { email: req.params.email };
+      if(req.params.email !== req.decoded.email){
+        return res.status(403).send({ message: 'forbidden access' });
+      }
+      const result = await paymentCollection.find(query).toArray();
+      res.send(result);
+    })
 
     // await client.connect();
     await client.db("admin").command({ ping: 1 });
