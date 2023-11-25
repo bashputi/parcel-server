@@ -18,12 +18,8 @@ app.use(cors({
   ))
   app.use(express.json());
 
-
-  
-
   const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.fobkzbd.mongodb.net/?retryWrites=true&w=majority`;
-
-const client = new MongoClient(uri, {
+  const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
     strict: true,
@@ -34,7 +30,9 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     const userCollection = client.db('parcelDB').collection('users');
-
+    const bookCollection = client.db('parcelDB').collection('book');
+    const cartCollection = client.db('parcelDB').collection('carts');
+// post jwt in sever 
     app.post('/jwt', async(req, res) => {
       const user = req.body;
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
@@ -55,14 +53,18 @@ async function run() {
         next();
       })
     }
+     // use verify admin after verifyToken
+
     // users related api
     app.get('/users', async (req, res) => {
       const result = await userCollection.find().toArray();
       res.send(result);
     });
-    app.post('/users', async (req, res) => {
+    // users admin email 
+
+     // users section 
+     app.post('/users', async (req, res) => {
       const user = req.body;
-      
       const query = { email: user.email }
       const existingUser = await userCollection.findOne(query);
       if (existingUser) {
@@ -71,10 +73,44 @@ async function run() {
       const result = await userCollection.insertOne(user);
       res.send(result);
     });
+    // user patch 
+
+    // user delete 
+
+    // Get user role
+    app.get('/users/:email', async (req, res) => {
+      const email = req.params.email
+      const result = await userCollection.findOne({ email })
+      res.send(result)
+    })
+   
+
+    // book section 
+    app.post('/book', async(req, res) => {
+      const item = req.body;
+      const result = await bookCollection.insertOne(item);
+      res.send(result);
+    })
+    app.get('/book', async(req, res) => {
+      const result = await bookCollection.find().toArray();
+      res.send(result);
+    })
+    app.delete('/book/:id', async(req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await menuCollection.deleteOne(query);
+      res.send(result)
+    })
+    app.get('/book/:id', async(req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id)};
+      const result = await bookCollection.findOne(query);
+      res.send(result);
+    })
 
 
-
-
+      // cart section 
+      
 
     // await client.connect();
     await client.db("admin").command({ ping: 1 });
