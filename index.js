@@ -32,6 +32,7 @@ async function run() {
     const userCollection = client.db('parcelDB').collection('users');
     const bookCollection = client.db('parcelDB').collection('books');
     const paymentCollection = client.db('parcelDB').collection('payments');
+    const profileCollection = client.db('parcelDB').collection('profiles');
     
 // post jwt in sever 
     app.post('/jwt', async(req, res) => {
@@ -110,14 +111,13 @@ async function run() {
    
 
     // book section 
-    app.get('/books', async (req, res) => {
-      const result = await bookCollection.find().toArray();
-      res.send(result);
-    });
+    // app.get('/books', async (req, res) => {
+    //   const result = await bookCollection.find().toArray();
+    //   res.send(result);
+    // });
     app.get('/books', async(req, res) => {
       const email = req.query.email;
       const query = { email: email };
-      console.log(query)
       const result = await bookCollection.find(query).toArray();
       res.send(result);
     })
@@ -125,8 +125,7 @@ async function run() {
       const bookitem = req.body;
       const result = await bookCollection.insertOne(bookitem);
       res.send(result);
-    })
-    
+    })    
     app.delete('/books/:id', async(req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) }
@@ -162,9 +161,7 @@ async function run() {
       }
       const result = await bookCollection.updateOne(filter, updatedDoc);
       res.send(result);
-    })
-   
-
+    })  
     // payment instant
     app.post('/create-payment-intent', async(req, res) => {
       const { price } = req.body;
@@ -196,6 +193,43 @@ async function run() {
       const result = await paymentCollection.find(query).toArray();
       res.send(result);
     })
+    // profile 
+    app.get('/profiles', async (req, res) => {
+      const result = await profileCollection.find().toArray();
+      res.send(result);
+    });
+    app.get('/profiles', async(req, res) => {
+      const email = req.query.email;
+      const query = { email: email };
+      const result = await profileCollection.find(query).toArray();
+      res.send(result);
+    })
+    app.post('/profiles', async(req, res) => {
+      const item = req.body;
+      const result = await profileCollection.insertOne(item);
+      res.send(result);
+    })
+    // app.get('/profiles/:id', async(req, res) => {
+    //   const id = req.params.id;
+    //   const query = { _id: new ObjectId(id)};
+    //   const result = await profileCollection.findOne(query);
+    //   res.send(result);
+    // }) 
+    // app.patch('/profiles/:id', async (req, res) => {
+    //   const item = req.body;
+    //   const id = req.params.id;
+    //   const filter = { _id: new ObjectId(id)};
+    //   const updatedDoc = {
+    //     $set: {
+    //      image: item.image,
+    //       email: item.email,
+    //     }
+    //   }
+    //   const result = await profileCollection.updateOne(filter, updatedDoc);
+    //   res.send(result);
+    // }) 
+  
+   
 
     // await client.connect();
     await client.db("admin").command({ ping: 1 });
