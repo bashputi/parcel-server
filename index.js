@@ -35,11 +35,12 @@ async function run() {
     const profileCollection = client.db('parcelDB').collection('profiles');
     
 // post jwt in sever 
-    app.post('/jwt', async(req, res) => {
-      const user = req.body;
-      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '365d' });
-        res.send({ token });
-    })
+app.post('/jwt', async(req, res) => {
+  const user = req.body;
+//  console.log("Secret key:", process.env.ACCESS_TOKEN_SECRET);
+  const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '35d' });
+    res.send({ token });
+})
     // middleware 
     const verifyToken = (req, res, next) => {
       console.log('inside verify token', req.headers.authorization);
@@ -67,18 +68,23 @@ async function run() {
       next();
     }
     // users related api
-    app.get('/users',verifyToken, async (req, res) => {
-      const result = await userCollection.find().toArray();
+    // app.get('/users', verifyToken, async (req, res) => {
+    //   const result = await userCollection.find().toArray();
+    //   res.send(result);
+    // });
+    app.get('/users', async(req, res) => {
+      const role = req.query.role;
+      console.log(role)
+      const query = { role: role };
+      const result = await userCollection.find(query).toArray();
       res.send(result);
-    });
+    })
     // users admin email 
     app.get('/users/admin/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
-
       if (email !== req.decoded.email) {
         return res.status(403).send({ message: 'forbidden access' })
       }
-
       const query = { email: email };
       const user = await userCollection.findOne(query);
       let admin = false;
@@ -87,9 +93,25 @@ async function run() {
       }
       res.send({ admin });
     })
+    // deliveryman 
+    app.get('/users/deliveryman/:email', verifyToken, async (req, res) => {
+      const email = req.params.email;
+      if (email !== req.decoded.email) {
+        return res.status(403).send({ message: 'forbidden access' })
+      }
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      let deliveryman = false;
+      if (user) {
+        deliveryman = user?.role === 'deliveryman';
+      }
+      res.send({ deliveryman });
+    })
      // users section 
      app.post('/users', async (req, res) => {
       const user = req.body;
+      // insert email if user doesnt exists: 
+      // you can do this many ways (1. email unique, 2. upsert 3. simple checking)
       const query = { email: user.email }
       const existingUser = await userCollection.findOne(query);
       if (existingUser) {
@@ -99,22 +121,31 @@ async function run() {
       res.send(result);
     });
     // user patch 
-
+    app.patch('/users/admin/:id', async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          role: 'admin'
+        }
+      }
+      const result = await userCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    })
     // user delete 
 
     // Get user role
-    app.get('/users/:email', async (req, res) => {
-      const email = req.params.email
-      const result = await userCollection.findOne({ email })
-      res.send(result)
-    })
-   
+    // app.get('/users/:email', async (req, res) => {
+    //   const email = req.params.email
+    //   const result = await userCollection.findOne({ email })
+    //   res.send(result)
+    // })
 
     // book section 
-    // app.get('/books', async (req, res) => {
-    //   const result = await bookCollection.find().toArray();
-    //   res.send(result);
-    // });
+    app.get('/books', async (req, res) => {
+      const result = await bookCollection.find().toArray();
+      res.send(result);
+    });
     app.get('/books', async(req, res) => {
       const email = req.query.email;
       const query = { email: email };
@@ -194,10 +225,10 @@ async function run() {
       res.send(result);
     })
     // profile 
-    app.get('/profiles', async (req, res) => {
-      const result = await profileCollection.find().toArray();
-      res.send(result);
-    });
+    // app.get('/profiles', async (req, res) => {
+    //   const result = await profileCollection.find().toArray();
+    //   res.send(result);
+    // });
     app.get('/profiles', async(req, res) => {
       const email = req.query.email;
       const query = { email: email };
@@ -209,25 +240,25 @@ async function run() {
       const result = await profileCollection.insertOne(item);
       res.send(result);
     })
-    // app.get('/profiles/:id', async(req, res) => {
-    //   const id = req.params.id;
-    //   const query = { _id: new ObjectId(id)};
-    //   const result = await profileCollection.findOne(query);
-    //   res.send(result);
-    // }) 
-    // app.patch('/profiles/:id', async (req, res) => {
-    //   const item = req.body;
-    //   const id = req.params.id;
-    //   const filter = { _id: new ObjectId(id)};
-    //   const updatedDoc = {
-    //     $set: {
-    //      image: item.image,
-    //       email: item.email,
-    //     }
-    //   }
-    //   const result = await profileCollection.updateOne(filter, updatedDoc);
-    //   res.send(result);
-    // }) 
+    app.get('/profiles/:id', async(req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id)};
+      const result = await profileCollection.findOne(query);
+      res.send(result);
+    }) 
+    app.patch('/profiles/:id', async (req, res) => {
+      const item = req.body;
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id)};
+      const updatedDoc = {
+        $set: {
+         image: item.image,
+          email: item.email,
+        }
+      }
+      const result = await profileCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    }) 
   
    
 
