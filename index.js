@@ -38,7 +38,7 @@ async function run() {
 app.post('/jwt', async(req, res) => {
   const user = req.body;
 //  console.log("Secret key:", process.env.ACCESS_TOKEN_SECRET);
-  const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '35d' });
+  const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '30d' });
     res.send({ token });
 })
     // middleware 
@@ -57,26 +57,26 @@ app.post('/jwt', async(req, res) => {
       })
     }
      // use verify admin after verifyToken
-     const verifyAdmin = async (req, res, next) => {
-      const email = req.decoded.email;
-      const query = { email: email };
-      const user = await userCollection.findOne(query);
-      const isAdmin = user?.role === 'admin';
-      if (!isAdmin) {
-        return res.status(403).send({ message: 'forbidden access' });
-      }
-      next();
-    }
-     const verifyCommoner = async (req, res, next) => {
-      const email = req.decoded.email;
-      const query = { email: email };
-      const user = await userCollection.findOne(query);
-      const isCommoner = user?.role === 'commoner';
-      if (!isCommoner) {
-        return res.status(403).send({ message: 'forbidden access' });
-      }
-      next();
-    }
+    //  const verifyAdmin = async (req, res, next) => {
+    //   const email = req.decoded.email;
+    //   const query = { email: email };
+    //   const user = await userCollection.findOne(query);
+    //   const isAdmin = user?.role === 'admin';
+    //   if (!isAdmin) {
+    //     return res.status(403).send({ message: 'forbidden access' });
+    //   }
+    //   next();
+    // }
+    //  const verifyCommoner = async (req, res, next) => {
+    //   const email = req.decoded.email;
+    //   const query = { email: email };
+    //   const user = await userCollection.findOne(query);
+    //   const isCommoner = user?.role === 'commoner';
+    //   if (!isCommoner) {
+    //     return res.status(403).send({ message: 'forbidden access' });
+    //   }
+    //   next();
+    // }
     // users related api
     // app.get('/users', async (req, res) => {
     //   const result = await userCollection.find().toArray();
@@ -85,7 +85,6 @@ app.post('/jwt', async(req, res) => {
     app.get('/users',  async(req, res) => {
       const page = parseInt(req.query.page);
       const size = parseInt(req.query.size);
-      console.log('pagi', req.query)
         const result = await userCollection.find()
         .skip(page * size)
         .limit(size)
@@ -154,7 +153,7 @@ app.post('/jwt', async(req, res) => {
       res.send(result);
     });
     // user patch 
-    app.patch('/users/admin/:id', async (req, res) => {
+    app.patch('/users/admin/:id',  async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const updatedDoc = {
@@ -165,7 +164,18 @@ app.post('/jwt', async(req, res) => {
       const result = await userCollection.updateOne(filter, updatedDoc);
       res.send(result);
     })
-    app.patch('/users/deliveryman/:id', async (req, res) => {
+    app.patch('/books/status/:id',  async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          status: 'on the way'
+        }
+      }
+      const result = await bookCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    }) 
+    app.patch('/users/deliveryman/:id',  async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const updatedDoc = {
@@ -177,13 +187,21 @@ app.post('/jwt', async(req, res) => {
       res.send(result);
     })
     // user delete 
-
+    app.get('/users/deliveryman', async (req, res) => {
+      try {
+        const role = 'deliveryman';
+        const result = await userCollection.find({ role: role }); // Query for users with the role of 'deliveryman'
+        res.status(200).json(result);
+      } catch (error) {
+        res.status(500).json({ message: error.message });
+      }
+    });
     // Get user role
-    // app.get('/users/:email', async (req, res) => {
-    //   const email = req.params.email
-    //   const result = await userCollection.findOne({ email })
-    //   res.send(result)
-    // })
+    app.get('/users/:email', async (req, res) => {
+      const email = req.params.email
+      const result = await userCollection.findOne({ email })
+      res.send(result)
+    })
 
     // book section 
     app.get('/books', async (req, res) => {
@@ -241,7 +259,8 @@ app.post('/jwt', async(req, res) => {
       }
       const result = await bookCollection.updateOne(filter, updatedDoc);
       res.send(result);
-    })  
+    }) 
+  
     // payment instant
     app.post('/create-payment-intent', async(req, res) => {
       const { price } = req.body;
@@ -265,7 +284,7 @@ app.post('/jwt', async(req, res) => {
      
       res.send({paymentResult, query})
     })
-    app.get('/payments/:email', verifyToken, async(req, res) => {
+    app.get('/payments/:email',  async(req, res) => {
       const query = { email: req.params.email };
       if(req.params.email !== req.decoded.email){
         return res.status(403).send({ message: 'forbidden access' });
@@ -309,10 +328,20 @@ app.post('/jwt', async(req, res) => {
       res.send(result);
     }) 
   
+  //  stats 
+  app.get('/stats',  async(req, res) => {
+    const users = await userCollection.estimatedDocumentCount();
+    const bookItems = await bookCollection.estimatedDocumentCount();
    
+    res.send({
+      users,
+      bookItems,
+     
+    })
+  })
 
     // await client.connect();
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // await client.close();
