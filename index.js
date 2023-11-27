@@ -67,11 +67,21 @@ app.post('/jwt', async(req, res) => {
       }
       next();
     }
+     const verifyCommoner = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      const isCommoner = user?.role === 'commoner';
+      if (!isCommoner) {
+        return res.status(403).send({ message: 'forbidden access' });
+      }
+      next();
+    }
     // users related api
-    // app.get('/users', verifyToken, async (req, res) => {
-    //   const result = await userCollection.find().toArray();
-    //   res.send(result);
-    // });
+    app.get('/users', async (req, res) => {
+      const result = await userCollection.find().toArray();
+      res.send(result);
+    });
     app.get('/users', async(req, res) => {
       const role = req.query.role;
       console.log(role)
@@ -94,7 +104,7 @@ app.post('/jwt', async(req, res) => {
       res.send({ admin });
     })
     // deliveryman 
-    app.get('/users/deliveryman/:email', verifyToken, async (req, res) => {
+    app.get('/users/deliveryman/:email', verifyToken,  async (req, res) => {
       const email = req.params.email;
       if (email !== req.decoded.email) {
         return res.status(403).send({ message: 'forbidden access' })
@@ -106,6 +116,19 @@ app.post('/jwt', async(req, res) => {
         deliveryman = user?.role === 'deliveryman';
       }
       res.send({ deliveryman });
+    })
+    app.get('/users/commoner/:email', verifyToken,  async (req, res) => {
+      const email = req.params.email;
+      if (email !== req.decoded.email) {
+        return res.status(403).send({ message: 'forbidden access' })
+      }
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      let commoner = false;
+      if (user) {
+        commoner = user?.role === 'commoner';
+      }
+      res.send({ commoner });
     })
      // users section 
      app.post('/users', async (req, res) => {
@@ -146,7 +169,12 @@ app.post('/jwt', async(req, res) => {
       const result = await bookCollection.find().toArray();
       res.send(result);
     });
-    app.get('/books', async(req, res) => {
+    app.get('/books/:email', async (req, res) => {
+      const email = req.params.email
+      const result = await bookCollection.findOne({ email })
+      res.send(result)
+    })
+    app.get('/books',  async(req, res) => {
       const email = req.query.email;
       const query = { email: email };
       const result = await bookCollection.find(query).toArray();
