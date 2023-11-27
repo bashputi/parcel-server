@@ -78,17 +78,27 @@ app.post('/jwt', async(req, res) => {
       next();
     }
     // users related api
-    app.get('/users', async (req, res) => {
-      const result = await userCollection.find().toArray();
-      res.send(result);
-    });
-    app.get('/users', async(req, res) => {
-      const role = req.query.role;
-      console.log(role)
-      const query = { role: role };
-      const result = await userCollection.find(query).toArray();
-      res.send(result);
+    // app.get('/users', async (req, res) => {
+    //   const result = await userCollection.find().toArray();
+    //   res.send(result);
+    // });
+    app.get('/users',  async(req, res) => {
+      const page = parseInt(req.query.page);
+      const size = parseInt(req.query.size);
+      console.log('pagi', req.query)
+        const result = await userCollection.find()
+        .skip(page * size)
+        .limit(size)
+        .toArray();
+        res.send(result);
     })
+    // app.get('/users', async(req, res) => {
+    //   const role = req.query.role;
+    //   console.log(role)
+    //   const query = { role: role };
+    //   const result = await userCollection.find(query).toArray();
+    //   res.send(result);
+    // })
     // users admin email 
     app.get('/users/admin/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
