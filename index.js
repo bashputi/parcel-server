@@ -193,12 +193,34 @@ app.post('/jwt', async(req, res) => {
     })
 
     // book section 
-    app.patch('/books/status/:id',  async (req, res) => {
+    // app.patch('/books/status/:id',  async (req, res) => {
+    //   const id = req.params.id;
+    //   const filter = { _id: new ObjectId(id) };
+    //   const updatedDoc = {
+    //     $set: {
+    //       status: 'on the way'
+    //     }
+    //   }
+    //   const result = await bookCollection.updateOne(filter, updatedDoc);
+    //   res.send(result);
+    // })
+    app.patch('/books/tasks/:id',  async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const updatedDoc = {
         $set: {
-          status: 'on the way'
+          status: 'Cancelled'
+        }
+      }
+      const result = await bookCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    })
+    app.patch('/books/delivers/:id',  async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          status: 'delivered'
         }
       }
       const result = await bookCollection.updateOne(filter, updatedDoc);
@@ -208,11 +230,14 @@ app.post('/jwt', async(req, res) => {
       const item = req.body;
       console.log(item)
       const id = req.params.id;
+      console.log(id)
       const filter = { _id: new ObjectId(id) };
+      console.log(filter)
       const updatedDoc = {
         $set: {
           deliverydate: item.deliverydate,
           deliverymanid: item.deliverymanid,
+          status: 'on the way'
         }
       }
       const result = await bookCollection.updateOne(filter, updatedDoc );
@@ -250,7 +275,6 @@ app.post('/jwt', async(req, res) => {
       const result = await bookCollection.deleteOne(query);
       res.send(result)
     })
-
     app.patch('/books/:id', async (req, res) => {
       const item = req.body;
       const id = req.params.id;
@@ -272,7 +296,6 @@ app.post('/jwt', async(req, res) => {
           status: 'pending'
         }
       }
-      console.log(updatedDoc)
       const result = await bookCollection.updateOne(filter, updatedDoc);
       res.send(result);
     }) 
