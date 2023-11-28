@@ -10,7 +10,8 @@ const port = process.env.PORT || 5002;
 // middleware 
 app.use(cors({
     origin: [
-       'http://localhost:5173' 
+       'https://parcel-delivery-user.web.app' ,
+       'https://parcel-delivery-user.firebaseapp.com'
       
     ]
   }
@@ -33,6 +34,7 @@ async function run() {
     const bookCollection = client.db('parcelDB').collection('books');
     const paymentCollection = client.db('parcelDB').collection('payments');
     const profileCollection = client.db('parcelDB').collection('profiles');
+    const ratingCollection = client.db('parcelDB').collection('ratings');
     
 // post jwt in sever 
 app.post('/jwt', async(req, res) => {
@@ -378,6 +380,16 @@ app.post('/jwt', async(req, res) => {
      
     })
   })
+  // ratings 
+  app.post('/ratings', async(req, res) => {
+    const bookitem = req.body;
+    const result = await ratingCollection.insertOne(bookitem);
+    res.send(result);
+  })
+  app.get('/ratings', async (req, res) => {
+    const result = await ratingCollection.find().toArray();
+    res.send(result);
+  });
 
     // await client.connect();
     // await client.db("admin").command({ ping: 1 });
