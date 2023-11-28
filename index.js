@@ -57,16 +57,16 @@ app.post('/jwt', async(req, res) => {
       })
     }
      // use verify admin after verifyToken
-    //  const verifyAdmin = async (req, res, next) => {
-    //   const email = req.decoded.email;
-    //   const query = { email: email };
-    //   const user = await userCollection.findOne(query);
-    //   const isAdmin = user?.role === 'admin';
-    //   if (!isAdmin) {
-    //     return res.status(403).send({ message: 'forbidden access' });
-    //   }
-    //   next();
-    // }
+     const verifyAdmin = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      const isAdmin = user?.role === 'admin';
+      if (!isAdmin) {
+        return res.status(403).send({ message: 'forbidden access' });
+      }
+      next();
+    }
     //  const verifyCommoner = async (req, res, next) => {
     //   const email = req.decoded.email;
     //   const query = { email: email };
@@ -78,11 +78,11 @@ app.post('/jwt', async(req, res) => {
     //   next();
     // }
     // users related api
-    // app.get('/users', async (req, res) => {
-    //   const result = await userCollection.find().toArray();
-    //   res.send(result);
-    // });
-    app.get('/users',  async(req, res) => {
+    app.get('/users', async (req, res) => {
+      const result = await userCollection.find().toArray();
+      res.send(result);
+    });
+    app.get('/users', async(req, res) => {
       const page = parseInt(req.query.page);
       const size = parseInt(req.query.size);
         const result = await userCollection.find()
@@ -163,17 +163,6 @@ app.post('/jwt', async(req, res) => {
       }
       const result = await userCollection.updateOne(filter, updatedDoc);
       res.send(result);
-    })
-    app.patch('/books/status/:id',  async (req, res) => {
-      const id = req.params.id;
-      const filter = { _id: new ObjectId(id) };
-      const updatedDoc = {
-        $set: {
-          status: 'on the way'
-        }
-      }
-      const result = await bookCollection.updateOne(filter, updatedDoc);
-      res.send(result);
     }) 
     app.patch('/users/deliveryman/:id',  async (req, res) => {
       const id = req.params.id;
@@ -204,15 +193,46 @@ app.post('/jwt', async(req, res) => {
     })
 
     // book section 
+    app.patch('/books/status/:id',  async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          status: 'on the way'
+        }
+      }
+      const result = await bookCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    })
+    app.patch('/books/assign/:id',  async (req, res) => {
+      const item = req.body;
+      console.log(item)
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          deliverydate: item.deliverydate,
+          deliverymanid: item.deliverymanid,
+        }
+      }
+      const result = await bookCollection.updateOne(filter, updatedDoc );
+      res.send(result);
+    })
     app.get('/books', async (req, res) => {
       const result = await bookCollection.find().toArray();
       res.send(result);
     });
-    app.get('/books/:email', async (req, res) => {
-      const email = req.params.email
-      const result = await bookCollection.findOne({ email })
-      res.send(result)
-    })
+    app.get('/books/:id', async(req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id)};
+      const result = await bookCollection.findOne(query);
+      res.send(result);
+    }) 
+    // app.get('/books/:email', async (req, res) => {
+    //   const email = req.params.email
+    //   const result = await bookCollection.findOne({ email })
+    //   res.send(result)
+    // })
     app.get('/books',  async(req, res) => {
       const email = req.query.email;
       const query = { email: email };
@@ -230,12 +250,7 @@ app.post('/jwt', async(req, res) => {
       const result = await bookCollection.deleteOne(query);
       res.send(result)
     })
-    app.get('/books/:id', async(req, res) => {
-      const id = req.params.id;
-      const query = { _id: new ObjectId(id)};
-      const result = await bookCollection.findOne(query);
-      res.send(result);
-    }) 
+
     app.patch('/books/:id', async (req, res) => {
       const item = req.body;
       const id = req.params.id;
@@ -257,6 +272,7 @@ app.post('/jwt', async(req, res) => {
           status: 'pending'
         }
       }
+      console.log(updatedDoc)
       const result = await bookCollection.updateOne(filter, updatedDoc);
       res.send(result);
     }) 
