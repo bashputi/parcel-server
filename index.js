@@ -10,6 +10,7 @@ const port = process.env.PORT || 5002;
 // middleware 
 app.use(cors({
     origin: [
+      
        'https://parcel-delivery-user.web.app' ,
        'https://parcel-delivery-user.firebaseapp.com'
       
@@ -373,10 +374,12 @@ app.post('/jwt', async(req, res) => {
   app.get('/stats',  async(req, res) => {
     const users = await userCollection.estimatedDocumentCount();
     const bookItems = await bookCollection.estimatedDocumentCount();
+    const review = await ratingCollection.estimatedDocumentCount();
    
     res.send({
       users,
       bookItems,
+      review
      
     })
   })
@@ -393,7 +396,7 @@ app.post('/jwt', async(req, res) => {
 
     // await client.connect();
     // await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    // console.log("Pinged your deployment. You successfully connected to MongoDB!"); 
   } finally {
     // await client.close();
   }
