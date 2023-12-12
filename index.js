@@ -10,7 +10,7 @@ const port = process.env.PORT || 5002;
 // middleware 
 app.use(cors({
     origin: [
-      
+      'http://localhost:5175',
        'https://parcel-delivery-user.web.app' ,
        'https://parcel-delivery-user.firebaseapp.com'
       
