@@ -195,18 +195,6 @@ app.post('/jwt', async(req, res) => {
       res.send(result)
     })
 
-    // book section 
-    // app.patch('/books/status/:id',  async (req, res) => {
-    //   const id = req.params.id;
-    //   const filter = { _id: new ObjectId(id) };
-    //   const updatedDoc = {
-    //     $set: {
-    //       status: 'on the way'
-    //     }
-    //   }
-    //   const result = await bookCollection.updateOne(filter, updatedDoc);
-    //   res.send(result);
-    // })
     app.patch('/books/tasks/:id',  async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
